@@ -58,10 +58,10 @@ def echo_all(message):
             bot.reply_to(message, message.text)
     elif (message.text == 'напиши мне код этого чата'):
         bot.send_message(message.chat.id, 'Код чата: ' + str(message.chat.id))
-        
+
     else:    
         bot.reply_to(message, message.text)
                 
-        
+# test        
 
 bot.polling()
