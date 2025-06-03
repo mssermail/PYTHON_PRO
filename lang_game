@@ -1,0 +1,103 @@
+import random
+import sounddevice as sd
+import numpy as np
+import scipy.io.wavfile as wav
+import speech_recognition as sr
+from googletrans import Translator
+
+
+duration = 5  # секунды записи
+sample_rate = 44100
+
+dict = {
+    "easy": ["кот", "собака", "яблоко", "молоко", "солнце"],
+    "medium": ["банан", "школа", "друг", "окно", "жёлтый"],
+    "hard": ["технология", "университет", "информация", "произношение", "воображение"]
+}
+
+dict_en = {
+    "easy": ["cat", "dog", "apple", "milk", "sun"],
+    "medium": ["banana", "school", "friend", "window", "yellow"],
+    "hard": ["tecknology", "university", "information", "prononsation", "imagination"]
+}
+
+print('Привет! Проверим твои знания английских слов.')
+print('Я буду спрашивать, ты отвечай. Для выхода скажи "stop".')
+
+run = 1
+
+while run == 1:
+    level = ""
+    while level == "":
+        res = input('Выбери уровень сложности: 1 - easy, 2 - medium или 3 - hard:')
+        if res == "1":
+            level = "easy"
+        elif res == "2":
+            level = "medium"
+        elif res == "3":
+            level = "hard"
+        else:
+            print("Вы не выбрали уровень сложности или выбрали его некорректно!")
+
+        
+    total = len(dict[level])
+    good = 0
+    badwords = []
+
+    for i in range(total):
+        
+        # word = 'тест'
+        # word_en = 'test'
+        
+        word = random.choice(dict[level])
+        i = dict[level].index(word)
+        word_en = dict_en[level][i]
+
+        print("- " + word)
+        
+        recording = sd.rec(
+        int(duration * sample_rate), # длительность записи в сэмплах
+        samplerate=sample_rate,      # частота дискретизации
+        channels=1,                  # 1 — это моно
+        dtype="int16")               # формат аудиоданных
+        sd.wait()  # ждём завершения записи
+        
+        wav.write("output.wav", sample_rate, recording)
+        
+        text = ''
+        recognizer = sr.Recognizer()
+        with sr.AudioFile("output.wav") as source:
+            audio = recognizer.record(source)
+        recognizer = sr.Recognizer()
+        with sr.AudioFile("output.wav") as source:
+            audio = recognizer.record(source)
+            try:
+                text = recognizer.recognize_google(audio, language="en-EN")
+                print("Ваш ответ:", text)
+
+            except sr.UnknownValueError:             # - если Google не понял речь (шум, молчание)
+                print("Не удалось распознать речь.")
+            except sr.RequestError as e:             # - если нет интернета или API недоступен
+                print(f"Ошибка сервиса: {e}")
+        
+        if text != '':
+            if text == 'stop':
+                break
+            elif text.lower() == word_en:
+                print('Правильно!')
+                good += 1
+            else:
+                print('Неверно! Правильный перевод: ' + word_en)
+                badwords.append(word)
+
+    print('Названо правильно '+ str(good) +' слов из ' + str(total))
+
+    if len(badwords) > 0:
+        print("Вам нужно повторить слова:")
+        for i in badwords:
+            print(" - " + i)
+
+    res = input("Повторим? y - да, n - нет")
+    if res != "y":
+        run = 0
+    
